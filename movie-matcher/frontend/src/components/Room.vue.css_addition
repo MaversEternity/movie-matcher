@@ -1,0 +1,76 @@
+
+.restart-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.restart-section h4 {
+  color: white;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.restart-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-row {
+  margin-bottom: 1.5rem;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-weight: 600;
+}
+
+.form-row select,
+.form-row input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-row select:focus,
+.form-row input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.restart-form button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #2ed573 0%, #26d0ce 100%);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
+}
+
+.restart-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(46, 213, 115, 0.4);
+}
+
+.restart-form button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
