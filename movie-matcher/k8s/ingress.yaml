@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: movie-matcher-ingress
+  namespace: movie-matcher
+  annotations:
+    # Uncomment and configure based on your ingress controller
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/websocket-services: "movie-matcher-backend"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx  # Change to your ingress class if different
+  rules:
+  - host: movie-matcher.example.com  # Change to your domain
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: movie-matcher-backend
+            port:
+              number: 3000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: movie-matcher-frontend
+            port:
+              number: 80
+  # Uncomment to enable TLS
+  # tls:
+  # - hosts:
+  #   - movie-matcher.example.com
+  #   secretName: movie-matcher-tls
