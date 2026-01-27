@@ -1,42 +1,19 @@
-# Build stage
-FROM rust:1.75-slim as builder
+# --- Stage 1: Builder ---
+FROM rust:1.83-slim AS builder
+WORKDIR /usr/src/app
 
-WORKDIR /app
+# Install build dependencies
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy manifests
-COPY Cargo.toml ./
-
-# Copy source
-COPY src ./src
-
-# Build release
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src/ && echo "fn main() {}" > src/main.rs && cargo build --release && rm -rf src
+COPY src src
 RUN cargo build --release
 
-# Runtime stage
-FROM debian:bookworm-slim
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    libssl3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy binary from builder
-COPY --from=builder /app/target/release/movie-matcher-backend /app/movie-matcher-backend
-
-# Expose port
+# --- Stage 2: Runtime ---
+FROM debian:bookworm-slim AS final
+RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/local/bin
+COPY --from=builder /usr/src/app/target/release/movie-matcher-backend ./app
 EXPOSE 3000
-
-# Set environment variables
-ENV RUST_LOG=info
-
-# Run the binary
-CMD ["/app/movie-matcher-backend"]
+CMD ["./app"]
