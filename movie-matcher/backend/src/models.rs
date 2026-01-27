@@ -99,6 +99,7 @@ pub enum ClientMessage {
         imdb_id: String,
     },
     EndMatching,
+    LeaveRoom { participant_id: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

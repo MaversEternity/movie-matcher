@@ -126,6 +126,13 @@
             </div>
           </div>
 
+          <!-- Exit Room Button (Non-host participants) -->
+          <div v-if="!isHost" class="exit-room-section">
+            <button @click="exitRoom" class="btn btn-warning">
+              🚪 Exit Room
+            </button>
+          </div>
+
           <!-- End Matching Button (Host only) -->
           <div v-if="isHost" class="end-matching-section">
             <button @click="endMatching" class="btn btn-danger">
@@ -468,6 +475,18 @@ function swipeRight() {
 
   currentMovieIndex.value++
   showNextMovie()
+}
+
+function exitRoom() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'LeaveRoom',
+      participant_id: props.participantId
+    }))
+  }
+  // Clear local storage and redirect to home
+  localStorage.removeItem(`room_${props.roomId}`)
+  window.location.href = '/'
 }
 
 function endMatching() {

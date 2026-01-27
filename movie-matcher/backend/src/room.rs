@@ -20,7 +20,7 @@ impl Room {
         }
     }
 
-    pub fn _remove_participant(&mut self, participant_id: &str) {
+    pub fn remove_participant(&mut self, participant_id: &str) {
         if let Some(pos) = self.participants.iter().position(|p| p == participant_id) {
             self.participants.remove(pos);
             self.participant_likes.remove(participant_id);

@@ -371,6 +371,18 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, room_id: String)
                                 {
                                     room.end_matching(&all_movies);
                                 }
+                                // Keep WS open
+
+                            }
+                            ClientMessage::LeaveRoom { participant_id } => {
+                                info!("Participant {} leaving room {}", participant_id, room_id_for_recv);
+                                if let Some(mut room) = state_for_recv.rooms.get_mut(&room_id_for_recv) {
+                                    room.remove_participant(&participant_id);
+                                    if room.participants.len() == 1 && room.participants[0] == room.host_id {
+                                        info!("Only host remains, ending matching");
+                                        room.end_matching(&all_movies);
+                                    }
+                                }
                                 break;
                             }
                         }
