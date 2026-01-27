@@ -1,200 +1,115 @@
 use crate::models::{MovieData, RoomFilters};
 use anyhow::{anyhow, Result};
-use futures::future::join_all;
 use serde::Deserialize;
 use tracing::{error, info};
 
 #[derive(Debug, Deserialize)]
 struct OmdbSearchResponse {
     #[serde(rename = "Search")]
-    search: Option<Vec<OmdbSearchResult>>,
+    search: Option<Vec<OmdbMovie>>,
     #[serde(rename = "Response")]
     response: String,
     #[serde(rename = "Error")]
-    _error: Option<String>,
+    error: Option<String>,
+    #[serde(rename = "totalResults")]
+    total_results: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OmdbSearchResult {
+struct OmdbMovie {
     #[serde(rename = "Title")]
     title: String,
     #[serde(rename = "Year")]
     year: String,
     #[serde(rename = "imdbID")]
     imdb_id: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct OmdbDetailResponse {
-    #[serde(rename = "Title")]
-    title: String,
-    #[serde(rename = "Year")]
-    year: String,
+    #[serde(rename = "Type")]
+    movie_type: String,
     #[serde(rename = "Poster")]
     poster: String,
-    #[serde(rename = "Plot")]
-    plot: String,
-    #[serde(rename = "Genre")]
-    genre: String,
-    #[serde(rename = "imdbRating")]
-    imdb_rating: String,
-    #[serde(rename = "imdbID")]
-    imdb_id: String,
-    #[serde(rename = "Response")]
-    response: String,
 }
 
-pub async fn fetch_random_movies(
+pub async fn fetch_movies_by_page(
     api_key: &str,
     filters: &RoomFilters,
-    count: usize,
-) -> Result<Vec<MovieData>> {
-    // Search terms that typically yield good results
-    let search_terms = vec![
-        "love",
-        "war",
-        "adventure",
-        "mystery",
-        "family",
-        "hero",
-        "night",
-        "city",
-        "world",
-        "story",
-        "life",
-        "death",
-        "time",
-        "space",
-        "dream",
-        "power",
-        "lost",
-        "last",
-    ];
-
+    page: u32,
+) -> Result<(Vec<MovieData>, bool)> {
     let client = reqwest::Client::new();
-    let mut all_candidates = Vec::new();
-
-    // Perform multiple searches in parallel
-    let num_searches = (count / 3).max(3);
-    let search_futures: Vec<_> = (0..num_searches)
-        .map(|i| {
-            let search_term = search_terms[i % search_terms.len()];
-            let year = if let (Some(from), Some(to)) = (filters.year_from, filters.year_to) {
-                Some(from + ((i as u32) % (to - from + 1)))
-            } else {
-                filters.year_from.or(filters.year_to)
-            };
-
-            let mut url = format!(
-                "https://www.omdbapi.com/?apikey={}&s={}&type=movie",
-                api_key, search_term
-            );
-
-            if let Some(y) = year {
-                url.push_str(&format!("&y={}", y));
-            }
-
-            let client = client.clone();
-            async move {
-                match client.get(&url).send().await {
-                    Ok(response) => {
-                        if let Ok(search_result) = response.json::<OmdbSearchResponse>().await {
-                            if search_result.response == "True" {
-                                return search_result.search.unwrap_or_default();
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("Error searching movies: {}", e);
-                    }
-                }
-                Vec::new()
-            }
-        })
-        .collect();
-
-    // Wait for all searches to complete
-    let search_results = join_all(search_futures).await;
-
-    // Collect all candidates
-    for results in search_results {
-        all_candidates.extend(results);
-    }
-
-    // Remove duplicates
-    all_candidates.sort_by(|a, b| a.imdb_id.cmp(&b.imdb_id));
-    all_candidates.dedup_by(|a, b| a.imdb_id == b.imdb_id);
-
-    // Limit candidates to avoid too many API calls
-    all_candidates.truncate(count * 2);
-
-    info!("Found {} candidate movies", all_candidates.len());
-
-    // Fetch details for all candidates in parallel
-    let detail_futures: Vec<_> = all_candidates
-        .iter()
-        .map(|movie| {
-            let api_key = api_key.to_string();
-            let imdb_id = movie.imdb_id.clone();
-            async move { fetch_movie_details(&api_key, &imdb_id).await }
-        })
-        .collect();
-
-    let detail_results = join_all(detail_futures).await;
-
-    // Filter and collect movies
-    let mut movies = Vec::new();
-    for movie_result in detail_results {
-        if let Ok(movie_data) = movie_result {
-            // Check genre filter
-            if let Some(genre_filter) = &filters.genre {
-                if !movie_data
-                    .genre
-                    .to_lowercase()
-                    .contains(&genre_filter.to_lowercase())
-                {
-                    continue;
-                }
-            }
-
-            movies.push(movie_data);
-
-            // Stop once we have enough movies
-            if movies.len() >= count {
-                break;
-            }
-        }
-    }
-
-    if movies.is_empty() {
-        Err(anyhow!("Could not fetch any movies matching the filters"))
+    
+    // Build search query based on genre filter
+    let search_term = if let Some(genre) = &filters.genre {
+        genre.clone()
     } else {
-        info!("Successfully fetched {} movies", movies.len());
-        Ok(movies)
-    }
-}
-
-async fn fetch_movie_details(api_key: &str, imdb_id: &str) -> Result<MovieData> {
-    let client = reqwest::Client::new();
-    let url = format!(
-        "https://www.omdbapi.com/?apikey={}&i={}&plot=short",
-        api_key, imdb_id
+        "movie".to_string()
+    };
+    
+    let mut url = format!(
+        "https://www.omdbapi.com/?apikey={}&s={}&type=movie&page={}",
+        api_key, search_term, page
     );
-
-    let response = client.get(&url).send().await?;
-    let detail: OmdbDetailResponse = response.json().await?;
-
-    if detail.response != "True" {
-        return Err(anyhow!("Movie not found"));
+    
+    // Add year filter if specified
+    if let Some(year_from) = filters.year_from {
+        if let Some(year_to) = filters.year_to {
+            // OMDB doesn't support year ranges, so we'll use year_from as primary filter
+            url.push_str(&format!("&y={}", year_from));
+        } else {
+            url.push_str(&format!("&y={}", year_from));
+        }
+    } else if let Some(year_to) = filters.year_to {
+        url.push_str(&format!("&y={}", year_to));
     }
-
-    Ok(MovieData {
-        title: detail.title,
-        year: detail.year,
-        poster: detail.poster,
-        plot: detail.plot,
-        genre: detail.genre,
-        imdb_rating: detail.imdb_rating,
-        imdb_id: detail.imdb_id,
-    })
+    
+    info!("Fetching movies from OMDB: {}", url);
+    
+    let response = client.get(&url).send().await?;
+    let search_result: OmdbSearchResponse = response.json().await?;
+    
+    if search_result.response != "True" {
+        let err_msg = search_result.error.unwrap_or_else(|| "Unknown error".to_string());
+        error!("OMDB API error: {}", err_msg);
+        return Err(anyhow!("OMDB API error: {}", err_msg));
+    }
+    
+    let movies_from_api = search_result.search.unwrap_or_default();
+    
+    // Parse total results to determine if there are more pages
+    let total_results: u32 = search_result
+        .total_results
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+    
+    let has_more_pages = (page * 10) < total_results;
+    
+    // Convert to our MovieData format
+    let movies: Vec<MovieData> = movies_from_api
+        .into_iter()
+        .filter(|m| m.movie_type == "movie") // Ensure it's a movie, not series
+        .filter(|m| {
+            // Apply year range filter client-side since OMDB doesn't support ranges
+            if let (Some(year_from), Some(year_to)) = (filters.year_from, filters.year_to) {
+                if let Ok(movie_year) = m.year.split('–').next().unwrap_or(&m.year).parse::<u32>() {
+                    return movie_year >= year_from && movie_year <= year_to;
+                }
+            }
+            true
+        })
+        .map(|m| MovieData {
+            title: m.title,
+            year: m.year,
+            poster: if m.poster == "N/A" { String::new() } else { m.poster },
+            plot: String::new(), // Not available in search results
+            genre: filters.genre.clone().unwrap_or_else(|| "Unknown".to_string()),
+            imdb_rating: String::new(), // Not available in search results
+            imdb_id: m.imdb_id,
+        })
+        .collect();
+    
+    info!("Fetched {} movies from page {}, has_more: {}", movies.len(), page, has_more_pages);
+    
+    if movies.is_empty() {
+        Err(anyhow!("No movies found"))
+    } else {
+        Ok((movies, has_more_pages))
+    }
 }

@@ -23,6 +23,8 @@ pub struct Room {
     pub participant_likes: HashMap<String, Vec<String>>, // participant_id -> vec of imdb_ids
     #[serde(skip)]
     pub sent_movie_ids: std::collections::HashSet<String>, // track sent movies to avoid duplicates
+    #[serde(skip)]
+    pub current_page: u32, // track current OMDB page for pagination
 }
 
 impl Room {
@@ -40,6 +42,7 @@ impl Room {
             tx: Some(tx),
             participant_likes,
             sent_movie_ids: std::collections::HashSet::new(),
+            current_page: 1,
         }
     }
 }
@@ -78,6 +81,7 @@ pub enum ServerMessage {
         all_likes: Vec<ParticipantLikes>,
         common_likes: Vec<MovieData>,
     },
+    StreamingEnded,
     MatchFound {
         all_likes: Vec<ParticipantLikes>,
         common_likes: Vec<MovieData>,

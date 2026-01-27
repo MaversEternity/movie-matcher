@@ -41,6 +41,7 @@ impl Room {
             likes.clear();
         }
         self.sent_movie_ids.clear();
+        self.current_page = 1;
 
         if let Some(tx) = &self.tx {
             let _ = tx.send(ServerMessage::MatchingStarted);

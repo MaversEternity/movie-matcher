@@ -135,13 +135,10 @@ async fn stream_movies_infinitely(state: Arc<AppState>, room_id: String) -> anyh
         room.filters.clone()
     };
 
-    let mut failed_attempts = 0;
-    let max_failed_attempts = 3;
-
-    // Stream movies in batches until room becomes inactive or we run out
+    // Stream movies page by page until room becomes inactive or we run out
     loop {
         // Check if room still exists and is active
-        {
+        let current_page = {
             let room = state.rooms.get(&room_id);
             if room.is_none() || !room.as_ref().unwrap().is_active {
                 info!(
@@ -150,11 +147,12 @@ async fn stream_movies_infinitely(state: Arc<AppState>, room_id: String) -> anyh
                 );
                 break;
             }
-        }
+            room.unwrap().current_page
+        };
 
-        // Fetch a batch of movies
-        match omdb::fetch_random_movies(&state.omdb_api_key, &filters, 15).await {
-            Ok(mut movies) => {
+        // Fetch a page of movies
+        match omdb::fetch_movies_by_page(&state.omdb_api_key, &filters, current_page).await {
+            Ok((movies, has_more_pages)) => {
                 // Filter out duplicates using room's sent_movie_ids
                 let new_movies: Vec<MovieData> = {
                     let mut room = state
@@ -162,93 +160,106 @@ async fn stream_movies_infinitely(state: Arc<AppState>, room_id: String) -> anyh
                         .get_mut(&room_id)
                         .ok_or(anyhow::anyhow!("Room not found"))?;
 
-                    movies.retain(|movie| {
-                        if room.sent_movie_ids.contains(&movie.imdb_id) {
-                            false
-                        } else {
+                    let mut filtered = Vec::new();
+                    for movie in movies {
+                        if !room.sent_movie_ids.contains(&movie.imdb_id) {
                             room.sent_movie_ids.insert(movie.imdb_id.clone());
-                            true
+                            filtered.push(movie);
                         }
-                    });
+                    }
 
-                    movies
+                    // Increment page for next fetch
+                    room.current_page += 1;
+
+                    filtered
                 };
 
-                if new_movies.is_empty() {
-                    failed_attempts += 1;
-                    warn!(
-                        "No new movies found for room {}, attempt {}/{}",
-                        room_id, failed_attempts, max_failed_attempts
-                    );
-
-                    if failed_attempts >= max_failed_attempts {
-                        info!(
-                            "Exhausted movie sources for room {}, stopping stream (room stays active)",
-                            room_id
-                        );
-                        // Don't end matching - just stop streaming
-                        // Users can still finish movies in their queue
-                        break;
-                    }
-
-                    // Wait longer before retrying
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                    continue;
-                } else {
-                    // Reset failed attempts on success
-                    failed_attempts = 0;
+                if new_movies.is_empty() && !has_more_pages {
                     info!(
-                        "Fetched {} new movies for room {}",
-                        new_movies.len(),
+                        "Exhausted all pages for room {}, stopping stream (room stays active)",
                         room_id
                     );
-
-                    // Broadcast each movie
-                    for movie in new_movies {
-                        // Check again if room is still active
-                        {
-                            let room = state.rooms.get(&room_id);
-                            if room.is_none() || !room.as_ref().unwrap().is_active {
-                                break;
-                            }
+                    
+                    // Stop streaming - users can still finish their queue
+                    if let Some(mut room) = state.rooms.get_mut(&room_id) {
+                        if let Some(tx) = &room.tx {
+                            let _ = tx.send(crate::models::ServerMessage::StreamingEnded);
                         }
-
-                        if let Some(room) = state.rooms.get(&room_id) {
-                            room.broadcast_movie(movie);
-                        }
-
-                        // Small delay between movies
-                        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                        let all_movies: Vec<MovieData> = Vec::new();
+                        // Just stop streaming, dont end matching
                     }
-                }
-            }
-            Err(e) => {
-                failed_attempts += 1;
-                error!(
-                    "Error fetching movies for room {} (attempt {}/{}): {}",
-                    room_id, failed_attempts, max_failed_attempts, e
-                );
-
-                if failed_attempts >= max_failed_attempts {
-                    info!(
-                        "Too many failures, stopping stream for room {} (room stays active)",
-                        room_id
-                    );
-                    // Don't end matching - just stop streaming
                     break;
                 }
 
-                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                if new_movies.is_empty() {
+                    // No new movies on this page, but more pages available - continue to next page
+                    info!("Page {} had no new movies, trying next page", current_page);
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    continue;
+                }
+
+                info!(
+                    "Fetched {} new movies from page {} for room {}, has_more: {}",
+                    new_movies.len(),
+                    current_page,
+                    room_id,
+                    has_more_pages
+                );
+
+                // Broadcast each movie
+                for movie in new_movies {
+                    // Check again if room is still active
+                    {
+                        let room = state.rooms.get(&room_id);
+                        if room.is_none() || !room.as_ref().unwrap().is_active {
+                            break;
+                        }
+                    }
+
+                    if let Some(room) = state.rooms.get(&room_id) {
+                        room.broadcast_movie(movie);
+                    }
+
+                    // Small delay between movies
+                    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                }
+
+                // If no more pages, stop streaming
+                if !has_more_pages {
+                    info!("No more pages available for room {}, stopping stream (room stays active)", room_id);
+                    
+                    if let Some(mut room) = state.rooms.get_mut(&room_id) {
+                        if let Some(tx) = &room.tx {
+                            let _ = tx.send(crate::models::ServerMessage::StreamingEnded);
+                        }
+                        let all_movies: Vec<MovieData> = Vec::new();
+                        // Just stop streaming, dont end matching
+                        // Users can still finish movies in their queue
+                    }
+                    break;
+                }
+            }
+            Err(e) => {
+                error!(
+                    "Error fetching movies for room {} on page {}: {}",
+                    room_id, current_page, e
+                );
+                
+                // End matching on API error
+                if let Some(mut room) = state.rooms.get_mut(&room_id) {
+                    let all_movies: Vec<MovieData> = Vec::new();
+                    room.end_matching(&all_movies);
+                }
+                break;
             }
         }
 
-        // Small delay before fetching next batch
+        // Small delay before fetching next page
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
 
     Ok(())
 }
-
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
@@ -345,10 +356,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>, room_id: String)
                                                     common_likes,
                                                 });
                                         }
-
-                                        // End matching
-                                        room.end_matching(&all_movies);
-                                        break;
+                                        // Room stays active - dont end matching
                                     }
                                 }
                             }

@@ -276,6 +276,7 @@ const props = defineProps({
 
 const isMatchingActive = ref(false)
 const matchingEnded = ref(false)
+const streamingEnded = ref(false)
 const currentMovie = ref(null)
 const movieQueue = ref([])
 const currentMovieIndex = ref(0)
@@ -297,10 +298,23 @@ const restartFilters = ref({
 
 let ws = null
 
-onMounted(() => {
+onMounted(async () => {
   shareUrl.value = `${window.location.origin}/room/${props.roomId}`
+  await fetchRoomState()
   connectWebSocket()
 })
+
+async function fetchRoomState() {
+  try {
+    const response = await fetch(`/api/rooms/${props.roomId}/state`)
+    if (response.ok) {
+      const roomState = await response.json()
+      participants.value = roomState.participants || []
+    }
+  } catch (err) {
+    console.error("Error fetching room state:", err)
+  }
+}
 
 onUnmounted(() => {
   if (ws) {
@@ -356,6 +370,7 @@ function handleMessage(message) {
       movieQueue.value = []
       currentMovieIndex.value = 0
       allParticipantLikes.value = []
+      streamingEnded.value = false
       commonLikes.value = []
       break
 
@@ -379,6 +394,16 @@ function handleMessage(message) {
       // Update live likes display
       allParticipantLikes.value = message.all_likes
       commonLikes.value = message.common_likes
+      break
+
+    case 'StreamingEnded':
+      // Backend has exhausted all pages, no more movies coming
+      streamingEnded.value = true
+      // Check if queue is empty and end matching
+      if (currentMovieIndex.value >= movieQueue.value.length) {
+        // Queue is empty, fetch final state and end matching
+        endMatchingDueToExhaustion()
+      }
       break
 
     case 'MatchFound':
@@ -411,7 +436,14 @@ function showNextMovie() {
     currentMovie.value = movieQueue.value[currentMovieIndex.value]
   } else {
     // Wait for more movies (infinite streaming)
-    currentMovie.value = null
+    // Check if streaming has ended
+    if (streamingEnded.value) {
+      // No more movies coming, end matching
+      endMatchingDueToExhaustion()
+    } else {
+      // Wait for more movies (infinite streaming)
+      currentMovie.value = null
+    }
   }
 }
 
@@ -444,6 +476,25 @@ function endMatching() {
       type: 'EndMatching'
     }))
   }
+}
+
+async function endMatchingDueToExhaustion() {
+  // Fetch final state from backend
+  try {
+    const response = await fetch(`/api/rooms/${props.roomId}/state`)
+    if (response.ok) {
+      const roomState = await response.json()
+      allParticipantLikes.value = roomState.all_likes || []
+      commonLikes.value = roomState.common_likes || []
+    }
+  } catch (err) {
+    console.error("Error fetching final state:", err)
+  }
+  
+  // Show results page
+  isMatchingActive.value = false
+  matchingEnded.value = true
+  currentMovie.value = null
 }
 
 async function startMatching() {
@@ -493,6 +544,7 @@ async function restartMatching() {
     currentMovieIndex.value = 0
     totalMovies.value = 0
     allParticipantLikes.value = []
+      streamingEnded.value = false
     commonLikes.value = []
     currentMovie.value = null
 
