@@ -106,8 +106,13 @@ pub enum ClientMessage {
 pub struct MovieData {
     pub title: String,
     pub year: String,
+    pub rated: String,
+    pub runtime: String,
     pub poster: String,
+    pub director: String,
+    pub actors: String,
     pub plot: String,
+    pub country: String,
     pub genre: String,
     pub imdb_rating: String,
     pub imdb_id: String,

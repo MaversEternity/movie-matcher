@@ -47,7 +47,7 @@
             <div class="movie-card">
               <div class="movie-poster">
                 <img
-                  v-if="currentMovie.poster !== 'N/A'"
+                  v-if="currentMovie.poster"
                   :src="currentMovie.poster"
                   :alt="currentMovie.title"
                 />
@@ -57,14 +57,20 @@
               <div class="movie-details">
                 <h3>{{ currentMovie.title }}</h3>
                 <div class="movie-meta">
-                  <span class="badge">{{ currentMovie.year }}</span>
-                  <span class="badge">{{ currentMovie.genre }}</span>
-                  <span class="badge">⭐ {{ currentMovie.imdb_rating }}</span>
+                  <span v-if="currentMovie.year" class="badge">📅 {{ currentMovie.year }}</span>
+                  <span v-if="currentMovie.rated" class="badge">{{ currentMovie.rated }}</span>
+                  <span v-if="currentMovie.runtime" class="badge">⏱ {{ currentMovie.runtime }}</span>
+                  <span v-if="currentMovie.imdb_rating" class="badge">⭐ {{ currentMovie.imdb_rating }}</span>
                 </div>
-                <p class="movie-plot">{{ currentMovie.plot }}</p>
+                <div class="movie-info">
+                  <p v-if="currentMovie.genre"><strong>Genre:</strong> {{ currentMovie.genre }}</p>
+                  <p v-if="currentMovie.director"><strong>Director:</strong> {{ currentMovie.director }}</p>
+                  <p v-if="currentMovie.actors"><strong>Actors:</strong> {{ currentMovie.actors }}</p>
+                  <p v-if="currentMovie.country"><strong>Country:</strong> {{ currentMovie.country }}</p>
+                </div>
+                <p v-if="currentMovie.plot" class="movie-plot">{{ currentMovie.plot }}</p>
               </div>
             </div>
-
             <div class="swipe-controls">
               <button @click="swipeLeft" class="swipe-btn swipe-left" title="Not interested">
                 <span class="swipe-icon">👎</span>
@@ -821,6 +827,24 @@ h2 {
 .movie-plot {
   color: #555;
   line-height: 1.6;
+}
+
+.movie-info {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+}
+
+.movie-info p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.movie-info strong {
+  color: #333;
+  margin-right: 0.5rem;
 }
 
 .swipe-controls {
