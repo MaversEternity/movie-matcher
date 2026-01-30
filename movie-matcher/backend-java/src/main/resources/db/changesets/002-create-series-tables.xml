@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="014-create-age-ratings-table" author="movie-matcher">
+        <createTable tableName="age_ratings">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country_id" type="INTEGER"/>
+            <column name="description" type="VARCHAR(200)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="age_ratings"
+                                 baseColumnNames="country_id"
+                                 constraintName="fk_age_ratings_country"
+                                 referencedTableName="countries"
+                                 referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="age_ratings"
+                            columnNames="code, country_id"
+                            constraintName="uk_age_ratings_code_country"/>
+    </changeSet>
+
+    <changeSet id="015-create-movie-age-ratings-table" author="movie-matcher">
+        <createTable tableName="movie_age_ratings">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_age_ratings"
+                       columnNames="movie_id, rating_id"
+                       constraintName="pk_movie_age_ratings"/>
+
+        <addForeignKeyConstraint baseTableName="movie_age_ratings"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_age_ratings_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_age_ratings"
+                                 baseColumnNames="rating_id"
+                                 constraintName="fk_movie_age_ratings_rating"
+                                 referencedTableName="age_ratings"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="016-create-series-seasons-table" author="movie-matcher">
+        <createTable tableName="series_seasons">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="series_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="season_number" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="episode_count" type="INTEGER"/>
+            <column name="air_date" type="DATE"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="series_seasons"
+                                 baseColumnNames="series_id"
+                                 constraintName="fk_series_seasons_series"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="series_seasons"
+                            columnNames="series_id, season_number"
+                            constraintName="uk_series_seasons_series_number"/>
+    </changeSet>
+
+</databaseChangeLog>

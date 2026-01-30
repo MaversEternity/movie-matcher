@@ -1,29 +1,73 @@
 version: "3.8"
 
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: movie-matcher-backend
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: movie-matcher-postgres
+    restart: unless-stopped
     environment:
-      - OMDB_API_KEY=${OMDB_API_KEY}
-      - RUST_LOG=info
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: movie_matcher_dev
+      # Настройки для производительности
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistent storage - данные сохраняются между перезапусками
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d movie_matcher_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - movie-matcher-network
+
+  # Java Backend (Quarkus)
+  backend-java:
+    build:
+      context: ./backend-java
+      dockerfile: Dockerfile
+    container_name: movie-matcher-backend-java
+    restart: unless-stopped
+    environment:
+      # Database connection
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/movie_matcher_dev
+
+      # OMDB API
+      OMDB_API_KEY: ${OMDB_API_KEY:-a84837a9}
+
+      # Quarkus settings
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_HTTP_PORT: 3000
+      QUARKUS_PROFILE: prod
+
+      # Java options
+      JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:
       - "3000:3000"
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: movie-matcher-frontend
-    ports:
-      - "8080:80"
+      - "5005:5005" # Debug port
     depends_on:
-      - backend
-    restart: unless-stopped
+      postgres:
+        condition: service_healthy
+    networks:
+      - movie-matcher-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 networks:
-  default:
-    name: movie-matcher-network
+  movie-matcher-network:
+    driver: bridge
+
+volumes:
+  # Постоянное хранилище - данные НЕ удаляются при перезапуске
+  postgres_data:
+    driver: local

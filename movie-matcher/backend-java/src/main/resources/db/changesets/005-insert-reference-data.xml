@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Insert popular genres -->
+    <changeSet id="029-insert-genres" author="movie-matcher">
+        <insert tableName="genres">
+            <column name="name" value="Action"/>
+            <column name="slug" value="action"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Adventure"/>
+            <column name="slug" value="adventure"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Animation"/>
+            <column name="slug" value="animation"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Comedy"/>
+            <column name="slug" value="comedy"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Crime"/>
+            <column name="slug" value="crime"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Documentary"/>
+            <column name="slug" value="documentary"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Drama"/>
+            <column name="slug" value="drama"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Family"/>
+            <column name="slug" value="family"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Fantasy"/>
+            <column name="slug" value="fantasy"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="History"/>
+            <column name="slug" value="history"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Horror"/>
+            <column name="slug" value="horror"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Music"/>
+            <column name="slug" value="music"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Mystery"/>
+            <column name="slug" value="mystery"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Romance"/>
+            <column name="slug" value="romance"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Science Fiction"/>
+            <column name="slug" value="science-fiction"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Thriller"/>
+            <column name="slug" value="thriller"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="War"/>
+            <column name="slug" value="war"/>
+        </insert>
+        <insert tableName="genres">
+            <column name="name" value="Western"/>
+            <column name="slug" value="western"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert popular countries -->
+    <changeSet id="030-insert-countries" author="movie-matcher">
+        <insert tableName="countries">
+            <column name="code" value="US"/>
+            <column name="name" value="United States"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="GB"/>
+            <column name="name" value="United Kingdom"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="CA"/>
+            <column name="name" value="Canada"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="FR"/>
+            <column name="name" value="France"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="DE"/>
+            <column name="name" value="Germany"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="IT"/>
+            <column name="name" value="Italy"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="ES"/>
+            <column name="name" value="Spain"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="JP"/>
+            <column name="name" value="Japan"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="KR"/>
+            <column name="name" value="South Korea"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="CN"/>
+            <column name="name" value="China"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="IN"/>
+            <column name="name" value="India"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="RU"/>
+            <column name="name" value="Russia"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="AU"/>
+            <column name="name" value="Australia"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="BR"/>
+            <column name="name" value="Brazil"/>
+        </insert>
+        <insert tableName="countries">
+            <column name="code" value="MX"/>
+            <column name="name" value="Mexico"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert popular languages -->
+    <changeSet id="031-insert-languages" author="movie-matcher">
+        <insert tableName="languages">
+            <column name="code" value="en"/>
+            <column name="name" value="English"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="es"/>
+            <column name="name" value="Spanish"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="fr"/>
+            <column name="name" value="French"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="de"/>
+            <column name="name" value="German"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="it"/>
+            <column name="name" value="Italian"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="ja"/>
+            <column name="name" value="Japanese"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="ko"/>
+            <column name="name" value="Korean"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="zh"/>
+            <column name="name" value="Chinese"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="ru"/>
+            <column name="name" value="Russian"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="pt"/>
+            <column name="name" value="Portuguese"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="hi"/>
+            <column name="name" value="Hindi"/>
+        </insert>
+        <insert tableName="languages">
+            <column name="code" value="ar"/>
+            <column name="name" value="Arabic"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert age ratings for US -->
+    <changeSet id="032-insert-age-ratings-us" author="movie-matcher">
+        <insert tableName="age_ratings">
+            <column name="code" value="G"/>
+            <column name="country_id" valueComputed="(SELECT id FROM countries WHERE code = 'US')"/>
+            <column name="description" value="General Audiences"/>
+        </insert>
+        <insert tableName="age_ratings">
+            <column name="code" value="PG"/>
+            <column name="country_id" valueComputed="(SELECT id FROM countries WHERE code = 'US')"/>
+            <column name="description" value="Parental Guidance Suggested"/>
+        </insert>
+        <insert tableName="age_ratings">
+            <column name="code" value="PG-13"/>
+            <column name="country_id" valueComputed="(SELECT id FROM countries WHERE code = 'US')"/>
+            <column name="description" value="Parents Strongly Cautioned"/>
+        </insert>
+        <insert tableName="age_ratings">
+            <column name="code" value="R"/>
+            <column name="country_id" valueComputed="(SELECT id FROM countries WHERE code = 'US')"/>
+            <column name="description" value="Restricted"/>
+        </insert>
+        <insert tableName="age_ratings">
+            <column name="code" value="NC-17"/>
+            <column name="country_id" valueComputed="(SELECT id FROM countries WHERE code = 'US')"/>
+            <column name="description" value="Adults Only"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

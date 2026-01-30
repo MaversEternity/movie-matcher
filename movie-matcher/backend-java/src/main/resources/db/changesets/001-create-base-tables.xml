@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-create-movies-table" author="movie-matcher">
+        <createTable tableName="movies">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="imdb_id" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="title" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_title" type="VARCHAR(500)"/>
+            <column name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="year" type="INTEGER"/>
+            <column name="release_date" type="DATE"/>
+            <column name="runtime" type="INTEGER"/>
+            <column name="plot" type="TEXT"/>
+            <column name="plot_short" type="VARCHAR(1000)"/>
+            <column name="poster_url" type="TEXT"/>
+            <column name="backdrop_url" type="TEXT"/>
+
+            <!-- Ratings -->
+            <column name="imdb_rating" type="DECIMAL(3,1)"/>
+            <column name="imdb_votes" type="INTEGER"/>
+            <column name="metacritic_score" type="INTEGER"/>
+            <column name="rotten_tomatoes_score" type="INTEGER"/>
+
+            <!-- Additional data -->
+            <column name="budget" type="BIGINT"/>
+            <column name="box_office" type="BIGINT"/>
+            <column name="awards" type="TEXT"/>
+
+            <!-- Metadata -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-genres-table" author="movie-matcher">
+        <createTable tableName="genres">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="slug" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="003-create-movie-genres-table" author="movie-matcher">
+        <createTable tableName="movie_genres">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="genre_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_genres"
+                       columnNames="movie_id, genre_id"
+                       constraintName="pk_movie_genres"/>
+
+        <addForeignKeyConstraint baseTableName="movie_genres"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_genres_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_genres"
+                                 baseColumnNames="genre_id"
+                                 constraintName="fk_movie_genres_genre"
+                                 referencedTableName="genres"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="004-create-countries-table" author="movie-matcher">
+        <createTable tableName="countries">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(2)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="005-create-movie-countries-table" author="movie-matcher">
+        <createTable tableName="movie_countries">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_countries"
+                       columnNames="movie_id, country_id"
+                       constraintName="pk_movie_countries"/>
+
+        <addForeignKeyConstraint baseTableName="movie_countries"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_countries_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_countries"
+                                 baseColumnNames="country_id"
+                                 constraintName="fk_movie_countries_country"
+                                 referencedTableName="countries"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="006-create-people-table" author="movie-matcher">
+        <createTable tableName="people">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="imdb_id" type="VARCHAR(20)">
+                <constraints unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="birth_date" type="DATE"/>
+            <column name="photo_url" type="TEXT"/>
+            <column name="bio" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="007-create-movie-credits-table" author="movie-matcher">
+        <createTable tableName="movie_credits">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="person_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="character_name" type="VARCHAR(200)"/>
+            <column name="order_index" type="INTEGER"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="movie_credits"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_credits_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_credits"
+                                 baseColumnNames="person_id"
+                                 constraintName="fk_movie_credits_person"
+                                 referencedTableName="people"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="008-create-languages-table" author="movie-matcher">
+        <createTable tableName="languages">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(3)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="009-create-movie-languages-table" author="movie-matcher">
+        <createTable tableName="movie_languages">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="language_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_original" type="BOOLEAN" defaultValueBoolean="false"/>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_languages"
+                       columnNames="movie_id, language_id"
+                       constraintName="pk_movie_languages"/>
+
+        <addForeignKeyConstraint baseTableName="movie_languages"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_languages_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_languages"
+                                 baseColumnNames="language_id"
+                                 constraintName="fk_movie_languages_language"
+                                 referencedTableName="languages"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="010-create-studios-table" author="movie-matcher">
+        <createTable tableName="studios">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(200)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="country_id" type="INTEGER"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="studios"
+                                 baseColumnNames="country_id"
+                                 constraintName="fk_studios_country"
+                                 referencedTableName="countries"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="011-create-movie-studios-table" author="movie-matcher">
+        <createTable tableName="movie_studios">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="studio_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_studios"
+                       columnNames="movie_id, studio_id"
+                       constraintName="pk_movie_studios"/>
+
+        <addForeignKeyConstraint baseTableName="movie_studios"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_studios_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_studios"
+                                 baseColumnNames="studio_id"
+                                 constraintName="fk_movie_studios_studio"
+                                 referencedTableName="studios"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="012-create-keywords-table" author="movie-matcher">
+        <createTable tableName="keywords">
+            <column name="id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="slug" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="013-create-movie-keywords-table" author="movie-matcher">
+        <createTable tableName="movie_keywords">
+            <column name="movie_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="keyword_id" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="movie_keywords"
+                       columnNames="movie_id, keyword_id"
+                       constraintName="pk_movie_keywords"/>
+
+        <addForeignKeyConstraint baseTableName="movie_keywords"
+                                 baseColumnNames="movie_id"
+                                 constraintName="fk_movie_keywords_movie"
+                                 referencedTableName="movies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="movie_keywords"
+                                 baseColumnNames="keyword_id"
+                                 constraintName="fk_movie_keywords_keyword"
+                                 referencedTableName="keywords"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

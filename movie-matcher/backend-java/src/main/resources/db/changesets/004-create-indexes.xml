@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Indexes for movies table -->
+    <changeSet id="019-create-movies-indexes" author="movie-matcher">
+        <createIndex tableName="movies" indexName="idx_movies_imdb_id">
+            <column name="imdb_id"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_year">
+            <column name="year"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_imdb_rating">
+            <column name="imdb_rating" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_type">
+            <column name="type"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_year_rating">
+            <column name="year" descending="true"/>
+            <column name="imdb_rating" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_type_year">
+            <column name="type"/>
+            <column name="year" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="movies" indexName="idx_movies_title">
+            <column name="title"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_genres -->
+    <changeSet id="020-create-movie-genres-indexes" author="movie-matcher">
+        <createIndex tableName="movie_genres" indexName="idx_movie_genres_genre">
+            <column name="genre_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_genres" indexName="idx_movie_genres_movie">
+            <column name="movie_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_countries -->
+    <changeSet id="021-create-movie-countries-indexes" author="movie-matcher">
+        <createIndex tableName="movie_countries" indexName="idx_movie_countries_country">
+            <column name="country_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_countries" indexName="idx_movie_countries_movie">
+            <column name="movie_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for people -->
+    <changeSet id="022-create-people-indexes" author="movie-matcher">
+        <createIndex tableName="people" indexName="idx_people_imdb_id">
+            <column name="imdb_id"/>
+        </createIndex>
+
+        <createIndex tableName="people" indexName="idx_people_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_credits -->
+    <changeSet id="023-create-movie-credits-indexes" author="movie-matcher">
+        <createIndex tableName="movie_credits" indexName="idx_credits_movie">
+            <column name="movie_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_credits" indexName="idx_credits_person">
+            <column name="person_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_credits" indexName="idx_credits_role">
+            <column name="role_type"/>
+        </createIndex>
+
+        <createIndex tableName="movie_credits" indexName="idx_credits_movie_role">
+            <column name="movie_id"/>
+            <column name="role_type"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_languages -->
+    <changeSet id="024-create-movie-languages-indexes" author="movie-matcher">
+        <createIndex tableName="movie_languages" indexName="idx_movie_languages_movie">
+            <column name="movie_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_languages" indexName="idx_movie_languages_language">
+            <column name="language_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_studios -->
+    <changeSet id="025-create-movie-studios-indexes" author="movie-matcher">
+        <createIndex tableName="movie_studios" indexName="idx_movie_studios_movie">
+            <column name="movie_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_studios" indexName="idx_movie_studios_studio">
+            <column name="studio_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for movie_keywords -->
+    <changeSet id="026-create-movie-keywords-indexes" author="movie-matcher">
+        <createIndex tableName="movie_keywords" indexName="idx_movie_keywords_keyword">
+            <column name="keyword_id"/>
+        </createIndex>
+
+        <createIndex tableName="movie_keywords" indexName="idx_movie_keywords_movie">
+            <column name="movie_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for user_ratings -->
+    <changeSet id="027-create-user-ratings-indexes" author="movie-matcher">
+        <createIndex tableName="user_ratings" indexName="idx_user_ratings_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="user_ratings" indexName="idx_user_ratings_movie">
+            <column name="movie_id"/>
+        </createIndex>
+
+        <createIndex tableName="user_ratings" indexName="idx_user_ratings_rating">
+            <column name="rating" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for user_watchlist -->
+    <changeSet id="028-create-user-watchlist-indexes" author="movie-matcher">
+        <createIndex tableName="user_watchlist" indexName="idx_user_watchlist_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="user_watchlist" indexName="idx_user_watchlist_movie">
+            <column name="movie_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
