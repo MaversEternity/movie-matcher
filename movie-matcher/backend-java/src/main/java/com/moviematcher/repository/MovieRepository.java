@@ -3,21 +3,20 @@ package com.moviematcher.repository;
 import com.moviematcher.entity.Movie;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 @ApplicationScoped
 public class MovieRepository implements PanacheRepository<Movie> {
 
-    @Inject
-    EntityManager em;
+    private final EntityManager em;
 
     /**
      * Universal method to find movies by all possible filters
@@ -36,13 +35,18 @@ public class MovieRepository implements PanacheRepository<Movie> {
 
         // Build predicates (WHERE conditions)
         List<Predicate> predicates = buildPredicates(cb, movie, criteria);
-        List<Predicate> countPredicates = buildPredicates(cb, countRoot, criteria);
+        List<Predicate> countPredicates = buildPredicates(
+            cb,
+            countRoot,
+            criteria
+        );
 
         // Apply predicates to queries
         if (!predicates.isEmpty()) {
             query.where(cb.and(predicates.toArray(new Predicate[0])));
-            countQuery.select(cb.count(countRoot))
-                     .where(cb.and(countPredicates.toArray(new Predicate[0])));
+            countQuery
+                .select(cb.count(countRoot))
+                .where(cb.and(countPredicates.toArray(new Predicate[0])));
         } else {
             countQuery.select(cb.count(countRoot));
         }
@@ -58,18 +62,28 @@ public class MovieRepository implements PanacheRepository<Movie> {
         Long total = em.createQuery(countQuery).getSingleResult();
 
         // Execute main query with pagination
-        List<Movie> movies = em.createQuery(query)
-                .setFirstResult(criteria.page * criteria.pageSize)
-                .setMaxResults(criteria.pageSize)
-                .getResultList();
+        List<Movie> movies = em
+            .createQuery(query)
+            .setFirstResult(criteria.page * criteria.pageSize)
+            .setMaxResults(criteria.pageSize)
+            .getResultList();
 
-        return new MovieSearchResult(movies, total, criteria.page, criteria.pageSize);
+        return new MovieSearchResult(
+            movies,
+            total,
+            criteria.page,
+            criteria.pageSize
+        );
     }
 
     /**
      * Build WHERE predicates safely using Criteria API
      */
-    private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Movie> movie, MovieFilterCriteria criteria) {
+    private List<Predicate> buildPredicates(
+        CriteriaBuilder cb,
+        Root<Movie> movie,
+        MovieFilterCriteria criteria
+    ) {
         List<Predicate> predicates = new ArrayList<>();
 
         // Filter by type (movie, series, episode)
@@ -79,82 +93,147 @@ public class MovieRepository implements PanacheRepository<Movie> {
 
         // Filter by genres
         if (criteria.genreSlugs != null && !criteria.genreSlugs.isEmpty()) {
-            Join<Object, Object> genreJoin = movie.join("genres", JoinType.INNER);
+            Join<Object, Object> genreJoin = movie.join(
+                "genres",
+                JoinType.INNER
+            );
             predicates.add(genreJoin.get("slug").in(criteria.genreSlugs));
         }
 
         // Filter by countries
         if (criteria.countryCodes != null && !criteria.countryCodes.isEmpty()) {
-            Join<Object, Object> countryJoin = movie.join("countries", JoinType.INNER);
+            Join<Object, Object> countryJoin = movie.join(
+                "countries",
+                JoinType.INNER
+            );
             predicates.add(countryJoin.get("code").in(criteria.countryCodes));
         }
 
         // Filter by languages
-        if (criteria.languageCodes != null && !criteria.languageCodes.isEmpty()) {
-            Join<Object, Object> languageJoin = movie.join("languages", JoinType.INNER);
+        if (
+            criteria.languageCodes != null && !criteria.languageCodes.isEmpty()
+        ) {
+            Join<Object, Object> languageJoin = movie.join(
+                "languages",
+                JoinType.INNER
+            );
             predicates.add(languageJoin.get("code").in(criteria.languageCodes));
         }
 
         // Filter by studios
         if (criteria.studioNames != null && !criteria.studioNames.isEmpty()) {
-            Join<Object, Object> studioJoin = movie.join("studios", JoinType.INNER);
+            Join<Object, Object> studioJoin = movie.join(
+                "studios",
+                JoinType.INNER
+            );
             predicates.add(studioJoin.get("name").in(criteria.studioNames));
         }
 
         // Filter by keywords
         if (criteria.keywordSlugs != null && !criteria.keywordSlugs.isEmpty()) {
-            Join<Object, Object> keywordJoin = movie.join("keywords", JoinType.INNER);
+            Join<Object, Object> keywordJoin = movie.join(
+                "keywords",
+                JoinType.INNER
+            );
             predicates.add(keywordJoin.get("slug").in(criteria.keywordSlugs));
         }
 
         // Filter by year range
         if (criteria.yearFrom != null) {
-            predicates.add(cb.greaterThanOrEqualTo(movie.get("year"), criteria.yearFrom));
+            predicates.add(
+                cb.greaterThanOrEqualTo(movie.get("year"), criteria.yearFrom)
+            );
         }
         if (criteria.yearTo != null) {
-            predicates.add(cb.lessThanOrEqualTo(movie.get("year"), criteria.yearTo));
+            predicates.add(
+                cb.lessThanOrEqualTo(movie.get("year"), criteria.yearTo)
+            );
         }
 
         // Filter by IMDB rating
         if (criteria.minImdbRating != null) {
-            predicates.add(cb.greaterThanOrEqualTo(movie.get("imdbRating"), criteria.minImdbRating));
+            predicates.add(
+                cb.greaterThanOrEqualTo(
+                    movie.get("imdbRating"),
+                    criteria.minImdbRating
+                )
+            );
         }
         if (criteria.maxImdbRating != null) {
-            predicates.add(cb.lessThanOrEqualTo(movie.get("imdbRating"), criteria.maxImdbRating));
+            predicates.add(
+                cb.lessThanOrEqualTo(
+                    movie.get("imdbRating"),
+                    criteria.maxImdbRating
+                )
+            );
         }
 
         // Filter by runtime (duration)
         if (criteria.minRuntime != null) {
-            predicates.add(cb.greaterThanOrEqualTo(movie.get("runtime"), criteria.minRuntime));
+            predicates.add(
+                cb.greaterThanOrEqualTo(
+                    movie.get("runtime"),
+                    criteria.minRuntime
+                )
+            );
         }
         if (criteria.maxRuntime != null) {
-            predicates.add(cb.lessThanOrEqualTo(movie.get("runtime"), criteria.maxRuntime));
+            predicates.add(
+                cb.lessThanOrEqualTo(movie.get("runtime"), criteria.maxRuntime)
+            );
         }
 
         // Filter by title (search)
         if (criteria.titleSearch != null && !criteria.titleSearch.isBlank()) {
-            String searchPattern = "%" + criteria.titleSearch.toLowerCase() + "%";
-            Predicate titleMatch = cb.like(cb.lower(movie.get("title")), searchPattern);
-            Predicate originalTitleMatch = cb.like(cb.lower(movie.get("originalTitle")), searchPattern);
+            String searchPattern =
+                "%" + criteria.titleSearch.toLowerCase() + "%";
+            Predicate titleMatch = cb.like(
+                cb.lower(movie.get("title")),
+                searchPattern
+            );
+            Predicate originalTitleMatch = cb.like(
+                cb.lower(movie.get("originalTitle")),
+                searchPattern
+            );
             predicates.add(cb.or(titleMatch, originalTitleMatch));
         }
 
         // Filter by director
         if (criteria.directorName != null && !criteria.directorName.isBlank()) {
-            Join<Object, Object> creditJoin = movie.join("credits", JoinType.INNER);
-            Join<Object, Object> personJoin = creditJoin.join("person", JoinType.INNER);
+            Join<Object, Object> creditJoin = movie.join(
+                "credits",
+                JoinType.INNER
+            );
+            Join<Object, Object> personJoin = creditJoin.join(
+                "person",
+                JoinType.INNER
+            );
             predicates.add(cb.equal(creditJoin.get("roleType"), "director"));
-            predicates.add(cb.like(cb.lower(personJoin.get("name")),
-                          "%" + criteria.directorName.toLowerCase() + "%"));
+            predicates.add(
+                cb.like(
+                    cb.lower(personJoin.get("name")),
+                    "%" + criteria.directorName.toLowerCase() + "%"
+                )
+            );
         }
 
         // Filter by actor
         if (criteria.actorName != null && !criteria.actorName.isBlank()) {
-            Join<Object, Object> creditJoin = movie.join("credits", JoinType.INNER);
-            Join<Object, Object> personJoin = creditJoin.join("person", JoinType.INNER);
+            Join<Object, Object> creditJoin = movie.join(
+                "credits",
+                JoinType.INNER
+            );
+            Join<Object, Object> personJoin = creditJoin.join(
+                "person",
+                JoinType.INNER
+            );
             predicates.add(cb.equal(creditJoin.get("roleType"), "actor"));
-            predicates.add(cb.like(cb.lower(personJoin.get("name")),
-                          "%" + criteria.actorName.toLowerCase() + "%"));
+            predicates.add(
+                cb.like(
+                    cb.lower(personJoin.get("name")),
+                    "%" + criteria.actorName.toLowerCase() + "%"
+                )
+            );
         }
 
         // Exclude nulls for rating-based sorting
@@ -168,22 +247,39 @@ public class MovieRepository implements PanacheRepository<Movie> {
     /**
      * Build ORDER BY clause safely
      */
-    private List<Order> buildOrderBy(CriteriaBuilder cb, Root<Movie> movie, MovieFilterCriteria criteria) {
+    private List<Order> buildOrderBy(
+        CriteriaBuilder cb,
+        Root<Movie> movie,
+        MovieFilterCriteria criteria
+    ) {
         List<Order> orders = new ArrayList<>();
 
         String sortBy = criteria.sortBy != null ? criteria.sortBy : "rating";
-        boolean ascending = criteria.sortAscending != null && criteria.sortAscending;
+        boolean ascending =
+            criteria.sortAscending != null && criteria.sortAscending;
 
         switch (sortBy) {
             case "rating":
-                orders.add(ascending ? cb.asc(movie.get("imdbRating")) : cb.desc(movie.get("imdbRating")));
+                orders.add(
+                    ascending
+                        ? cb.asc(movie.get("imdbRating"))
+                        : cb.desc(movie.get("imdbRating"))
+                );
                 orders.add(cb.desc(movie.get("imdbVotes"))); // Secondary sort
                 break;
             case "year":
-                orders.add(ascending ? cb.asc(movie.get("year")) : cb.desc(movie.get("year")));
+                orders.add(
+                    ascending
+                        ? cb.asc(movie.get("year"))
+                        : cb.desc(movie.get("year"))
+                );
                 break;
             case "title":
-                orders.add(ascending ? cb.asc(movie.get("title")) : cb.desc(movie.get("title")));
+                orders.add(
+                    ascending
+                        ? cb.asc(movie.get("title"))
+                        : cb.desc(movie.get("title"))
+                );
                 break;
             case "popularity":
                 orders.add(cb.desc(movie.get("imdbVotes")));
@@ -210,24 +306,36 @@ public class MovieRepository implements PanacheRepository<Movie> {
             return List.of();
         }
 
-        Parameters params = Parameters.with("pattern", "%" + title.toLowerCase() + "%");
+        Parameters params = Parameters.with(
+            "pattern",
+            "%" + title.toLowerCase() + "%"
+        );
 
-        return find("LOWER(title) LIKE :pattern OR LOWER(originalTitle) LIKE :pattern", params)
-                .page(0, limit)
-                .list();
+        return find(
+            "LOWER(title) LIKE :pattern OR LOWER(originalTitle) LIKE :pattern",
+            params
+        )
+            .page(0, limit)
+            .list();
     }
 
     /**
      * Result wrapper with pagination info
      */
     public static class MovieSearchResult {
+
         public final List<Movie> movies;
         public final long total;
         public final int page;
         public final int pageSize;
         public final int totalPages;
 
-        public MovieSearchResult(List<Movie> movies, long total, int page, int pageSize) {
+        public MovieSearchResult(
+            List<Movie> movies,
+            long total,
+            int page,
+            int pageSize
+        ) {
             this.movies = movies;
             this.total = total;
             this.page = page;
@@ -240,6 +348,7 @@ public class MovieRepository implements PanacheRepository<Movie> {
      * Filter criteria object - all filters in one place
      */
     public static class MovieFilterCriteria {
+
         // Type filter
         public String type; // "movie", "series", "episode"
 
@@ -313,7 +422,10 @@ public class MovieRepository implements PanacheRepository<Movie> {
             return this;
         }
 
-        public MovieFilterCriteria withSorting(String sortBy, boolean ascending) {
+        public MovieFilterCriteria withSorting(
+            String sortBy,
+            boolean ascending
+        ) {
             this.sortBy = sortBy;
             this.sortAscending = ascending;
             return this;

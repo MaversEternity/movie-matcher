@@ -98,6 +98,14 @@
             <artifactId>quarkus-logging-json</artifactId>
         </dependency>
 
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Health Check -->
         <dependency>
             <groupId>io.quarkus</groupId>

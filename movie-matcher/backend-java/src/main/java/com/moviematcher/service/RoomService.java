@@ -4,30 +4,32 @@ import com.moviematcher.client.OmdbClient;
 import com.moviematcher.model.*;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import org.jboss.logging.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Slf4j
+@RequiredArgsConstructor
 @ApplicationScoped
 public class RoomService {
 
-    private static final Logger LOG = Logger.getLogger(RoomService.class);
     private static final int MATCH_THRESHOLD = 3;
 
     private final Map<String, Room> rooms = new ConcurrentHashMap<>();
 
-    @Inject
-    OmdbClient omdbClient;
-
-    @Inject
-    WebSocketBroadcastService broadcastService;
+    private final OmdbClient omdbClient;
+    private final WebSocketBroadcastService broadcastService;
 
     public Room createRoom(RoomFilters filters, String hostId) {
         Room room = new Room(UUID.randomUUID().toString(), filters, hostId);
         rooms.put(room.getId(), room);
-        LOG.infof("Created room: %s", room.getId());
+        log.info("Created room: {}", room.getId());
         return room;
     }
 
@@ -43,7 +45,7 @@ public class RoomService {
 
         boolean added = room.addParticipant(participantId);
         if (added) {
-            LOG.infof("Participant %s joined room %s", participantId, roomId);
+            log.info("Participant {} joined room {}", participantId, roomId);
             broadcastService.broadcast(
                 roomId,
                 new ServerMessage.ParticipantJoined(participantId)
@@ -63,14 +65,14 @@ public class RoomService {
             roomId,
             new ServerMessage.ParticipantLeft(participantId)
         );
-        LOG.infof("Participant %s left room %s", participantId, roomId);
+        log.info("Participant {} left room {}", participantId, roomId);
 
         // If only host remains, end matching
         if (
             room.getParticipants().size() == 1 &&
             room.getParticipants().get(0).equals(room.getHostId())
         ) {
-            LOG.infof("Only host remains in room %s, ending matching", roomId);
+            log.info("Only host remains in room {}, ending matching", roomId);
             endMatching(roomId);
         }
     }
@@ -79,7 +81,7 @@ public class RoomService {
         Room room = rooms.get(roomId);
         if (room != null) {
             room.setFilters(filters);
-            LOG.infof("Updated filters for room %s: %s", roomId, filters);
+            log.info("Updated filters for room {}: {}", roomId, filters);
         }
     }
 
@@ -91,19 +93,19 @@ public class RoomService {
 
         room.start();
         broadcastService.broadcast(roomId, new ServerMessage.MatchingStarted());
-        LOG.infof("Room %s started matching", roomId);
+        log.info("Room {} started matching", roomId);
 
         // Start movie streaming in background
         streamMoviesInfinitely(roomId)
             .subscribe()
             .with(
                 result ->
-                    LOG.infof("Movie streaming completed for room %s", roomId),
+                    log.info("Movie streaming completed for room {}", roomId),
                 failure ->
-                    LOG.errorf(
-                        failure,
-                        "Error streaming movies for room %s",
-                        roomId
+                    log.error(
+                        "Error streaming movies for room {}",
+                        roomId,
+                        failure
                     )
             );
     }
@@ -118,8 +120,8 @@ public class RoomService {
     private Uni<Void> streamNextPage(String roomId) {
         Room room = rooms.get(roomId);
         if (room == null || !room.isActive()) {
-            LOG.infof(
-                "Room %s is no longer active, stopping movie stream",
+            log.info(
+                "Room {} is no longer active, stopping movie stream",
                 roomId
             );
             return Uni.createFrom().voidItem();
@@ -142,8 +144,8 @@ public class RoomService {
                 room.incrementPage();
 
                 if (newMovies.isEmpty() && !page.hasMore()) {
-                    LOG.infof(
-                        "Exhausted all pages for room %s, stopping stream",
+                    log.info(
+                        "Exhausted all pages for room {}, stopping stream",
                         roomId
                     );
                     broadcastService.broadcast(
@@ -154,8 +156,8 @@ public class RoomService {
                 }
 
                 if (newMovies.isEmpty()) {
-                    LOG.infof(
-                        "Page %d had no new movies, trying next page",
+                    log.info(
+                        "Page {} had no new movies, trying next page",
                         currentPage
                     );
                     return Uni.createFrom()
@@ -167,8 +169,8 @@ public class RoomService {
                         .transformToUni(v -> streamNextPage(roomId));
                 }
 
-                LOG.infof(
-                    "Fetched %d new movies from page %d for room %s, has_more: %b",
+                log.info(
+                    "Fetched {} new movies from page {} for room {}, has_more: {}",
                     newMovies.size(),
                     currentPage,
                     roomId,
@@ -180,8 +182,8 @@ public class RoomService {
                     .onItem()
                     .transformToUni(v -> {
                         if (!page.hasMore()) {
-                            LOG.infof(
-                                "No more pages available for room %s, stopping stream",
+                            log.info(
+                                "No more pages available for room {}, stopping stream",
                                 roomId
                             );
                             broadcastService.broadcast(
@@ -203,11 +205,11 @@ public class RoomService {
             })
             .onFailure()
             .recoverWithUni(error -> {
-                LOG.errorf(
-                    error,
-                    "Error fetching movies for room %s on page %d",
+                log.error(
+                    "Error fetching movies for room {} on page {}",
                     roomId,
-                    currentPage
+                    currentPage,
+                    error
                 );
                 endMatching(roomId);
                 return Uni.createFrom().voidItem();
@@ -253,8 +255,8 @@ public class RoomService {
         }
 
         room.addLike(participantId, imdbId);
-        LOG.infof(
-            "Participant %s liked movie %s in room %s",
+        log.info(
+            "Participant {} liked movie {} in room {}",
             participantId,
             imdbId,
             roomId
@@ -274,8 +276,8 @@ public class RoomService {
 
         // Check for match
         if (commonLikes.size() >= MATCH_THRESHOLD) {
-            LOG.infof(
-                "Match found! %d common movies in room %s",
+            log.info(
+                "Match found! {} common movies in room {}",
                 commonLikes.size(),
                 roomId
             );
@@ -304,7 +306,7 @@ public class RoomService {
             roomId,
             new ServerMessage.MatchingEnded(allLikes, commonLikes)
         );
-        LOG.infof("Room %s ended matching", roomId);
+        log.info("Room {} ended matching", roomId);
     }
 
     public RoomInfo getRoomInfo(String roomId) {

@@ -4,26 +4,29 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moviematcher.model.ServerMessage;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.websocket.Session;
-import org.jboss.logging.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
+@RequiredArgsConstructor
 @ApplicationScoped
 public class WebSocketBroadcastService {
 
-    private static final Logger LOG = Logger.getLogger(WebSocketBroadcastService.class);
+    private final Map<String, Set<Session>> roomSessions =
+        new ConcurrentHashMap<>();
 
-    private final Map<String, Set<Session>> roomSessions = new ConcurrentHashMap<>();
-
-    @Inject
-    ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     public void registerSession(String roomId, Session session) {
-        roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
-        LOG.infof("Session %s registered to room %s", session.getId(), roomId);
+        roomSessions
+            .computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet())
+            .add(session);
+        log.info("Session {} registered to room {}", session.getId(), roomId);
     }
 
     public void unregisterSession(String roomId, Session session) {
@@ -34,7 +37,11 @@ public class WebSocketBroadcastService {
                 roomSessions.remove(roomId);
             }
         }
-        LOG.infof("Session %s unregistered from room %s", session.getId(), roomId);
+        log.info(
+            "Session {} unregistered from room {}",
+            session.getId(),
+            roomId
+        );
     }
 
     public void broadcast(String roomId, ServerMessage message) {
@@ -55,7 +62,7 @@ public class WebSocketBroadcastService {
                 }
             }
         } catch (JsonProcessingException e) {
-            LOG.errorf(e, "Error serializing message: %s", message);
+            log.error("Error serializing message: {}", message, e);
         }
     }
 

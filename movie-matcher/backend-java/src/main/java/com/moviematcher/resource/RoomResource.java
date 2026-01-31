@@ -2,22 +2,21 @@ package com.moviematcher.resource;
 
 import com.moviematcher.model.*;
 import com.moviematcher.service.RoomService;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@RequiredArgsConstructor
 @Path("/api/rooms")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RoomResource {
 
-    private static final Logger LOG = Logger.getLogger(RoomResource.class);
-
-    @Inject
-    RoomService roomService;
+    private final RoomService roomService;
 
     @POST
     public Response createRoom(@Valid CreateRoomRequest request) {
@@ -51,7 +50,10 @@ public class RoomResource {
 
     @POST
     @Path("/{roomId}/join")
-    public Response joinRoom(@PathParam("roomId") String roomId, @Valid JoinRoomRequest request) {
+    public Response joinRoom(
+        @PathParam("roomId") String roomId,
+        @Valid JoinRoomRequest request
+    ) {
         boolean success = roomService.joinRoom(roomId, request.participantId());
         RoomInfo roomInfo = roomService.getRoomInfo(roomId);
 
@@ -65,7 +67,10 @@ public class RoomResource {
 
     @PUT
     @Path("/{roomId}/filters")
-    public Response updateFilters(@PathParam("roomId") String roomId, @Valid RoomFilters filters) {
+    public Response updateFilters(
+        @PathParam("roomId") String roomId,
+        @Valid RoomFilters filters
+    ) {
         if (roomService.getRoom(roomId).isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
