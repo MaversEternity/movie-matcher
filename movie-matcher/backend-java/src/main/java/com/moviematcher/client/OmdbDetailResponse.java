@@ -8,6 +8,7 @@ public record OmdbDetailResponse(
     @JsonProperty("Title") String title,
     @JsonProperty("Year") String year,
     @JsonProperty("Rated") String rated,
+    @JsonProperty("Released") String released,
     @JsonProperty("Runtime") String runtime,
     @JsonProperty("Genre") String genre,
     @JsonProperty("Director") String director,
@@ -16,6 +17,8 @@ public record OmdbDetailResponse(
     @JsonProperty("Country") String country,
     @JsonProperty("Poster") String poster,
     @JsonProperty("imdbRating") String imdbRating,
+    @JsonProperty("imdbVotes") String imdbVotes,
     @JsonProperty("imdbID") String imdbId,
+    @JsonProperty("Type") String type,
     @JsonProperty("Response") String response
 ) {}

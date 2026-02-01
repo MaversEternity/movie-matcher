@@ -9,7 +9,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Path("/")
 @RegisterRestClient(configKey = "omdb-api")
 public interface OmdbRestClient {
-
     @GET
     Uni<OmdbSearchResponse> search(
         @QueryParam("apikey") String apiKey,
@@ -23,6 +22,13 @@ public interface OmdbRestClient {
     Uni<OmdbDetailResponse> getDetails(
         @QueryParam("apikey") String apiKey,
         @QueryParam("i") String imdbId,
+        @QueryParam("plot") String plot
+    );
+
+    @GET
+    Uni<OmdbDetailResponse> searchByTitle(
+        @QueryParam("apikey") String apiKey,
+        @QueryParam("t") String title,
         @QueryParam("plot") String plot
     );
 }

@@ -5,28 +5,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moviematcher.model.ServerMessage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.websocket.Session;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jboss.logging.Logger;
 
-@Slf4j
-@RequiredArgsConstructor
 @ApplicationScoped
 public class WebSocketBroadcastService {
+
+    private static final Logger log = Logger.getLogger(
+        WebSocketBroadcastService.class
+    );
 
     private final Map<String, Set<Session>> roomSessions =
         new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper;
 
+    @jakarta.inject.Inject
+    public WebSocketBroadcastService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     public void registerSession(String roomId, Session session) {
         roomSessions
             .computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet())
             .add(session);
-        log.info("Session {} registered to room {}", session.getId(), roomId);
+        log.infof("Session {} registered to room {}", session.getId(), roomId);
     }
 
     public void unregisterSession(String roomId, Session session) {
@@ -37,7 +42,7 @@ public class WebSocketBroadcastService {
                 roomSessions.remove(roomId);
             }
         }
-        log.info(
+        log.infof(
             "Session {} unregistered from room {}",
             session.getId(),
             roomId
@@ -62,7 +67,7 @@ public class WebSocketBroadcastService {
                 }
             }
         } catch (JsonProcessingException e) {
-            log.error("Error serializing message: {}", message, e);
+            log.errorf("Error serializing message: {}", message, e);
         }
     }
 

@@ -6,17 +6,19 @@ import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
-import lombok.RequiredArgsConstructor;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-@RequiredArgsConstructor
 @ApplicationScoped
 public class MovieRepository implements PanacheRepository<Movie> {
 
     private final EntityManager em;
+
+    @jakarta.inject.Inject
+    public MovieRepository(EntityManager em) {
+        this.em = em;
+    }
 
     /**
      * Universal method to find movies by all possible filters
@@ -317,6 +319,87 @@ public class MovieRepository implements PanacheRepository<Movie> {
         )
             .page(0, limit)
             .list();
+    }
+
+    /**
+     * Получить случайные фильмы по фильтрам
+     * ВАЖНО: Возвращает в РАНДОМНОМ порядке для голосования
+     *
+     * @param genre жанр (может быть null)
+     * @param yearFrom год от (может быть null)
+     * @param yearTo год до (может быть null)
+     * @param minRating минимальный рейтинг (может быть null)
+     * @param type тип (movie/series)
+     * @param page номер страницы
+     * @param pageSize размер страницы
+     * @return список фильмов в случайном порядке
+     */
+    public List<Movie> findByFilters(
+        String genre,
+        Integer yearFrom,
+        Integer yearTo,
+        BigDecimal minRating,
+        String type,
+        int page,
+        int pageSize
+    ) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Movie> query = cb.createQuery(Movie.class);
+        Root<Movie> movie = query.from(Movie.class);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        // Фильтр по типу
+        if (type != null && !type.isBlank()) {
+            predicates.add(cb.equal(movie.get("type"), type));
+        }
+
+        // Фильтр по жанру
+        if (genre != null && !genre.isBlank()) {
+            Join<Object, Object> genreJoin = movie.join(
+                "genres",
+                JoinType.INNER
+            );
+            predicates.add(
+                cb.like(
+                    cb.lower(genreJoin.get("name")),
+                    "%" + genre.toLowerCase() + "%"
+                )
+            );
+        }
+
+        // Фильтр по годам
+        if (yearFrom != null) {
+            predicates.add(
+                cb.greaterThanOrEqualTo(movie.get("year"), yearFrom)
+            );
+        }
+        if (yearTo != null) {
+            predicates.add(cb.lessThanOrEqualTo(movie.get("year"), yearTo));
+        }
+
+        // Фильтр по рейтингу
+        if (minRating != null) {
+            predicates.add(
+                cb.greaterThanOrEqualTo(movie.get("imdbRating"), minRating)
+            );
+            predicates.add(cb.isNotNull(movie.get("imdbRating")));
+        }
+
+        if (!predicates.isEmpty()) {
+            query.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        query.distinct(true);
+
+        // ВАЖНО: Сортировка RANDOM для случайного порядка!
+        query.orderBy(cb.asc(cb.function("RANDOM", Double.class)));
+
+        return em
+            .createQuery(query)
+            .setFirstResult(page * pageSize)
+            .setMaxResults(pageSize)
+            .getResultList();
     }
 
     /**
