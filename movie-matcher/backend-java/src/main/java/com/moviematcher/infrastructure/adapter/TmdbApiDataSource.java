@@ -39,7 +39,7 @@ public class TmdbApiDataSource implements MovieDataSource {
 
     @jakarta.inject.Inject
     public TmdbApiDataSource(
-        TmdbRestClient tmdbClient,
+        @RestClient TmdbRestClient tmdbClient,
         TmdbMovieMapper movieMapper
     ) {
         this.tmdbClient = tmdbClient;

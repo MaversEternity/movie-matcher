@@ -35,7 +35,7 @@ public class TmdbSearchHandler extends MovieSearchHandler {
 
     @jakarta.inject.Inject
     public TmdbSearchHandler(
-        TmdbRestClient tmdbClient,
+        @RestClient TmdbRestClient tmdbClient,
         TmdbMovieMapper movieMapper
     ) {
         this.tmdbClient = tmdbClient;
@@ -85,7 +85,10 @@ public class TmdbSearchHandler extends MovieSearchHandler {
 
                 // ВАЖНО: Сохраняем в БД для будущих запросов!
                 movie.persist();
-                log.infof("Saved movie '{}' to database from TMDB", movie.title);
+                log.infof(
+                    "Saved movie '{}' to database from TMDB",
+                    movie.title
+                );
 
                 return Optional.of(movie);
             }

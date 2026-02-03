@@ -34,7 +34,7 @@ public class OmdbSearchHandler extends MovieSearchHandler {
 
     @jakarta.inject.Inject
     public OmdbSearchHandler(
-        OmdbRestClient omdbClient,
+        @RestClient OmdbRestClient omdbClient,
         OmdbMovieMapper movieMapper
     ) {
         this.omdbClient = omdbClient;
