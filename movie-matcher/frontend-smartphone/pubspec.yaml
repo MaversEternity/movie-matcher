@@ -1,0 +1,48 @@
+name: movie_matcher
+description: Movie Matcher - голосование за фильмы в реальном времени
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Управление состоянием
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # HTTP-клиент
+  dio: ^5.4.0
+
+  # WebSocket
+  web_socket_channel: ^2.4.0
+
+  # Навигация
+  go_router: ^13.1.0
+
+  # QR-код
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.1.1
+
+  # Изображения
+  cached_network_image: ^3.3.1
+
+  # UUID
+  uuid: ^4.3.3
+
+  # Свайп-карточки
+  flutter_card_swiper: ^7.0.0
+
+  # Иконки
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
